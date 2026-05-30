@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block title %}Manage Stock{% endblock %}
+{% block topbar_title %}<span>Book Stock</span><small>Update inventory quantities</small>{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="page-header-left">
+    <h1 class="page-title"><i class="fas fa-layer-group me-2" style="color:var(--accent)"></i>Manage Stock</h1>
+    <p class="page-subtitle">{{ books|length }} books in catalogue</p>
+  </div>
+</div>
+
+<div class="card mb-3">
+  <div class="card-body py-3">
+    <form method="GET" class="d-flex gap-2">
+      <div class="search-bar flex-grow-1">
+        <i class="fas fa-search search-icon"></i>
+        <input type="text" name="q" class="form-control" placeholder="Search books…" value="{{ search }}"/>
+      </div>
+      <button type="submit" class="btn btn-primary"><i class="fas fa-search"></i></button>
+      {% if search %}<a href="{{ url_for('librarian_books') }}" class="btn btn-secondary"><i class="fas fa-times"></i></a>{% endif %}
+    </form>
+  </div>
+</div>
+
+<div class="card">
+  <div class="table-wrapper">
+    <table class="table">
+      <thead>
+        <tr><th>#</th><th>Title</th><th>Author</th><th>Category</th><th>Total</th><th>Available</th><th>Issued</th><th>Update Stock</th></tr>
+      </thead>
+      <tbody>
+        {% for b in books %}
+        {% set issued = b.quantity - b.available %}
+        <tr>
+          <td style="color:var(--text-muted)">{{ loop.index }}</td>
+          <td class="book-title-cell">{{ b.title }}</td>
+          <td class="book-author-cell">{{ b.author }}</td>
+          <td><span class="category-pill">{{ b.category }}</span></td>
+          <td><span class="fw-600">{{ b.quantity }}</span></td>
+          <td>
+            <span class="stock-badge">
+              <span class="stock-dot {% if b.available==0 %}stock-empty{% elif b.available<=2 %}stock-low{% else %}stock-ok{% endif %}"></span>
+              {{ b.available }}
+            </span>
+          </td>
+          <td><span class="badge badge-amber">{{ issued }}</span></td>
+          <td>
+            <form method="POST" action="{{ url_for('update_stock', book_id=b.id) }}"
+                  class="d-flex gap-1 align-items-center">
+              <input type="number" name="quantity" value="{{ b.quantity }}"
+                     min="{{ issued }}" class="form-control form-control-sm"
+                     style="width:75px"/>
+              <button type="submit" class="btn btn-primary btn-sm"
+                      data-confirm="Update stock for '{{ b.title }}'?">
+                <i class="fas fa-save"></i>
+              </button>
+            </form>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="8">
+          <div class="empty-state"><i class="fas fa-books"></i><p>No books found</p></div>
+        </td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

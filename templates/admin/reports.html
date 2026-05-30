@@ -1,0 +1,199 @@
+{% extends "base.html" %}
+{% block title %}Reports{% endblock %}
+{% block topbar_title %}<span>Reports</span><small>Library analytics & history</small>{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="page-header-left">
+    <h1 class="page-title"><i class="fas fa-chart-bar me-2" style="color:var(--accent)"></i>Reports & Analytics</h1>
+  </div>
+</div>
+
+<!-- Tab navigation -->
+<ul class="nav nav-tabs mb-3" id="reportTabs" style="border-color:var(--border)">
+  <li class="nav-item">
+    <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-issues"
+      style="color:var(--text-secondary); border:none; background:none; font-size:.82rem; font-family:Poppins">
+      <i class="fas fa-history me-1"></i> All Issues
+    </button>
+  </li>
+  <li class="nav-item">
+    <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-overdue"
+      style="color:var(--text-secondary); border:none; background:none; font-size:.82rem; font-family:Poppins">
+      <i class="fas fa-exclamation-triangle me-1 text-danger"></i> Overdue
+      {% if overdue %}<span class="badge badge-red ms-1">{{ overdue|length }}</span>{% endif %}
+    </button>
+  </li>
+  <li class="nav-item">
+    <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-topbooks"
+      style="color:var(--text-secondary); border:none; background:none; font-size:.82rem; font-family:Poppins">
+      <i class="fas fa-star me-1"></i> Top Books
+    </button>
+  </li>
+  <li class="nav-item">
+    <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-requests"
+      style="color:var(--text-secondary); border:none; background:none; font-size:.82rem; font-family:Poppins">
+      <i class="fas fa-inbox me-1"></i> Requests
+    </button>
+  </li>
+</ul>
+
+<div class="tab-content">
+
+  <!-- ALL ISSUES -->
+  <div class="tab-pane fade show active" id="tab-issues">
+    <div class="card">
+      <div class="card-header">
+        <h5><i class="fas fa-list"></i> Issue History ({{ issued_books|length }} total)</h5>
+        <div class="search-bar" style="width:240px">
+          <i class="fas fa-search search-icon"></i>
+          <input type="text" id="tableFilter" class="form-control" placeholder="Filter…" style="font-size:.8rem"/>
+        </div>
+      </div>
+      <div class="table-wrapper">
+        <table class="table filterable-table">
+          <thead>
+            <tr>
+              <th>#</th><th>Book</th><th>Student</th><th>Category</th>
+              <th>Issued</th><th>Due</th><th>Returned</th><th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for r in issued_books %}
+            {% set is_overdue = r.status=='issued' and r.due_date and r.due_date < now.isoformat() %}
+            <tr {% if is_overdue %}class="overdue-row"{% endif %}>
+              <td style="color:var(--text-muted)">{{ loop.index }}</td>
+              <td class="book-title-cell">{{ r.title }}</td>
+              <td>
+                <div>{{ r.student_name }}</div>
+                <div class="book-author-cell">{{ r.student_email }}</div>
+              </td>
+              <td><span class="category-pill">{{ r.category }}</span></td>
+              <td style="font-size:.78rem">{{ r.issue_date[:10] }}</td>
+              <td><span data-due="{{ r.due_date }}">{{ r.due_date[:10] if r.due_date else '—' }}</span></td>
+              <td style="font-size:.78rem; color:var(--text-secondary)">{{ r.return_date[:10] if r.return_date else '—' }}</td>
+              <td>
+                {% if is_overdue %}
+                  <span class="badge status-overdue">Overdue</span>
+                {% else %}
+                  <span class="badge status-{{ r.status }}">{{ r.status|capitalize }}</span>
+                {% endif %}
+              </td>
+            </tr>
+            {% else %}
+            <tr><td colspan="8" class="text-center py-4" style="color:var(--text-muted)">No records</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- OVERDUE -->
+  <div class="tab-pane fade" id="tab-overdue">
+    <div class="card">
+      <div class="card-header">
+        <h5><i class="fas fa-clock" style="color:var(--accent-red)"></i> Overdue Books ({{ overdue|length }})</h5>
+      </div>
+      <div class="table-wrapper">
+        <table class="table">
+          <thead>
+            <tr><th>Book</th><th>Student</th><th>Email</th><th>Due Date</th><th>Status</th></tr>
+          </thead>
+          <tbody>
+            {% for r in overdue %}
+            <tr class="overdue-row">
+              <td class="book-title-cell">{{ r.title }}</td>
+              <td>{{ r.student_name }}</td>
+              <td style="color:var(--text-secondary)">{{ r.student_email }}</td>
+              <td style="color:#f87171; font-weight:600">{{ r.due_date[:10] if r.due_date else '—' }}</td>
+              <td>
+                <span class="badge badge-red">
+                  <i class="fas fa-clock me-1"></i>Overdue
+                </span>
+              </td>
+            </tr>
+            {% else %}
+            <tr><td colspan="5">
+              <div class="empty-state"><i class="fas fa-check-circle" style="color:#22c55e"></i><p>No overdue books!</p></div>
+            </td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOP BOOKS -->
+  <div class="tab-pane fade" id="tab-topbooks">
+    <div class="card">
+      <div class="card-header"><h5><i class="fas fa-trophy" style="color:var(--accent-3)"></i> Most Issued Books</h5></div>
+      <div class="table-wrapper">
+        <table class="table">
+          <thead><tr><th>Rank</th><th>Title</th><th>Author</th><th>Times Issued</th><th>Popularity</th></tr></thead>
+          <tbody>
+            {% set max_count = top_books[0].issue_count if top_books else 1 %}
+            {% for b in top_books %}
+            <tr>
+              <td>
+                <span style="font-size:.85rem; font-weight:700;
+                  color:{% if loop.index==1 %}#f59e0b{% elif loop.index==2 %}#9ca3af{% elif loop.index==3 %}#cd7c2f{% else %}var(--text-muted){% endif %}">
+                  #{{ loop.index }}
+                </span>
+              </td>
+              <td class="book-title-cell">{{ b.title }}</td>
+              <td style="color:var(--text-secondary)">{{ b.author }}</td>
+              <td><span class="badge badge-teal">{{ b.issue_count }}×</span></td>
+              <td style="width:180px">
+                <div style="height:6px; background:var(--border); border-radius:99px; overflow:hidden;">
+                  <div style="height:100%; width:{{ (b.issue_count/max_count*100)|round }}%; background:linear-gradient(90deg,var(--accent),var(--accent-2)); border-radius:99px;"></div>
+                </div>
+              </td>
+            </tr>
+            {% else %}
+            <tr><td colspan="5"><div class="empty-state"><i class="fas fa-star"></i><p>No data yet</p></div></td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- REQUESTS -->
+  <div class="tab-pane fade" id="tab-requests">
+    <div class="card">
+      <div class="card-header"><h5><i class="fas fa-inbox"></i> Book Requests ({{ requests|length }})</h5></div>
+      <div class="table-wrapper">
+        <table class="table">
+          <thead><tr><th>Book</th><th>Student</th><th>Requested</th><th>Status</th></tr></thead>
+          <tbody>
+            {% for r in requests %}
+            <tr>
+              <td class="book-title-cell">{{ r.title }}</td>
+              <td>{{ r.student_name }}</td>
+              <td style="color:var(--text-secondary); font-size:.78rem">{{ r.request_date[:10] }}</td>
+              <td><span class="badge status-{{ r.status }}">{{ r.status|capitalize }}</span></td>
+            </tr>
+            {% else %}
+            <tr><td colspan="4"><div class="empty-state"><i class="fas fa-inbox"></i><p>No requests</p></div></td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</div><!-- tab-content -->
+
+{% endblock %}
+
+{% block scripts %}
+<style>
+  .nav-tabs .nav-link.active {
+    color: var(--accent) !important;
+    border-bottom: 2px solid var(--accent) !important;
+    font-weight: 600;
+  }
+  .nav-tabs .nav-link:hover { color: var(--text-primary) !important; }
+</style>
+{% endblock %}

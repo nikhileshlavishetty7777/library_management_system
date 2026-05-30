@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+{% block title %}Manage Books{% endblock %}
+{% block topbar_title %}<span>Books</span><small>Manage the entire book catalogue</small>{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="page-header-left">
+    <h1 class="page-title"><i class="fas fa-books me-2" style="color:var(--accent)"></i>Book Catalogue</h1>
+    <p class="page-subtitle">{{ books|length }} book(s) found</p>
+  </div>
+  <a href="{{ url_for('admin_add_book') }}" class="btn btn-primary">
+    <i class="fas fa-plus me-2"></i>Add New Book
+  </a>
+</div>
+
+<!-- Filters -->
+<div class="card mb-3">
+  <div class="card-body py-3">
+    <form method="GET" class="row g-2 align-items-center">
+      <div class="col-md-5 search-bar">
+        <i class="fas fa-search search-icon"></i>
+        <input type="text" name="q" class="form-control" placeholder="Search title, author, ISBN…" value="{{ search }}"/>
+      </div>
+      <div class="col-md-3">
+        <select name="cat" class="form-select">
+          <option value="">All Categories</option>
+          {% for c in categories %}
+            <option value="{{ c.category }}" {% if selected_cat==c.category %}selected{% endif %}>{{ c.category }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-2">
+        <button type="submit" class="btn btn-primary w-100">
+          <i class="fas fa-filter me-1"></i>Filter
+        </button>
+      </div>
+      {% if search or selected_cat %}
+      <div class="col-md-2">
+        <a href="{{ url_for('admin_books') }}" class="btn btn-secondary w-100">
+          <i class="fas fa-times me-1"></i>Clear
+        </a>
+      </div>
+      {% endif %}
+    </form>
+  </div>
+</div>
+
+<!-- Table -->
+<div class="card">
+  <div class="table-wrapper">
+    <table class="table filterable-table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Title / Author</th>
+          <th>Category</th>
+          <th>ISBN</th>
+          <th>Year</th>
+          <th>Stock</th>
+          <th>Available</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for book in books %}
+        <tr>
+          <td style="color:var(--text-muted)">{{ loop.index }}</td>
+          <td>
+            <div class="book-title-cell">{{ book.title }}</div>
+            <div class="book-author-cell">{{ book.author }}</div>
+          </td>
+          <td><span class="category-pill">{{ book.category }}</span></td>
+          <td style="font-size:.78rem; color:var(--text-secondary); font-family:monospace">{{ book.isbn or '—' }}</td>
+          <td style="color:var(--text-secondary)">{{ book.year or '—' }}</td>
+          <td>
+            <span style="font-weight:600">{{ book.quantity }}</span>
+          </td>
+          <td>
+            <span class="stock-badge">
+              <span class="stock-dot {% if book.available == 0 %}stock-empty{% elif book.available <= 2 %}stock-low{% else %}stock-ok{% endif %}"></span>
+              {{ book.available }}
+            </span>
+          </td>
+          <td>
+            <div class="action-btns">
+              <a href="{{ url_for('admin_edit_book', book_id=book.id) }}"
+                 class="btn btn-warning btn-sm" data-bs-toggle="tooltip" title="Edit">
+                <i class="fas fa-edit"></i>
+              </a>
+              <form method="POST" action="{{ url_for('admin_delete_book', book_id=book.id) }}" style="display:inline">
+                <button type="submit" class="btn btn-danger btn-sm"
+                        data-confirm="Delete '{{ book.title }}'? This cannot be undone."
+                        data-bs-toggle="tooltip" title="Delete">
+                  <i class="fas fa-trash"></i>
+                </button>
+              </form>
+            </div>
+          </td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="8">
+            <div class="empty-state">
+              <i class="fas fa-books"></i>
+              <p>No books found. <a href="{{ url_for('admin_add_book') }}">Add your first book →</a></p>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

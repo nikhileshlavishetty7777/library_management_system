@@ -1,0 +1,201 @@
+{% extends "base.html" %}
+{% block title %}My Books{% endblock %}
+{% block topbar_title %}<span>My Books</span><small>Your issued books and requests</small>{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="page-header-left">
+    <h1 class="page-title"><i class="fas fa-bookmark me-2" style="color:var(--accent)"></i>My Books</h1>
+    <p class="page-subtitle">Track your issued books and pending requests</p>
+  </div>
+  <a href="{{ url_for('student_search') }}" class="btn btn-primary">
+    <i class="fas fa-search me-2"></i>Browse Books
+  </a>
+</div>
+
+<!-- Tab navigation -->
+<ul class="nav nav-tabs mb-3" id="myBooksTabs" style="border-color:var(--border)">
+  <li class="nav-item">
+    <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-issued"
+      style="color:var(--text-secondary); border:none; background:none; font-size:.82rem; font-family:Poppins">
+      <i class="fas fa-book-open me-1"></i> Issued Books
+      {% if issued %}<span class="badge badge-amber ms-1">{{ issued|selectattr('status','equalto','issued')|list|length }}</span>{% endif %}
+    </button>
+  </li>
+  <li class="nav-item">
+    <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-requests"
+      style="color:var(--text-secondary); border:none; background:none; font-size:.82rem; font-family:Poppins">
+      <i class="fas fa-inbox me-1"></i> My Requests
+      {% if requests %}<span class="badge badge-blue ms-1">{{ requests|selectattr('status','equalto','pending')|list|length }}</span>{% endif %}
+    </button>
+  </li>
+  <li class="nav-item">
+    <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-history"
+      style="color:var(--text-secondary); border:none; background:none; font-size:.82rem; font-family:Poppins">
+      <i class="fas fa-history me-1"></i> History
+    </button>
+  </li>
+</ul>
+
+<div class="tab-content">
+
+  <!-- CURRENTLY ISSUED -->
+  <div class="tab-pane fade show active" id="tab-issued">
+    {% set active_issues = issued | selectattr('status', 'equalto', 'issued') | list %}
+    {% if active_issues %}
+    <div class="row g-3">
+      {% for b in active_issues %}
+      {% set is_overdue = b.due_date and b.due_date < now.isoformat() %}
+      <div class="col-md-6 col-xl-4">
+        <div class="book-card {% if is_overdue %}overdue-card{% endif %}" style="{% if is_overdue %}border-color:rgba(239,68,68,.4);{% endif %}">
+          <div class="book-card-spine" style="{% if is_overdue %}background:linear-gradient(90deg,#ef4444,#dc2626);{% endif %}"></div>
+          <div class="book-card-body">
+            <div class="d-flex gap-3 mb-3">
+              <div class="book-cover">📚</div>
+              <div class="book-info">
+                <h6>{{ b.title }}</h6>
+                <div class="author">{{ b.author }}</div>
+                <span class="category-pill">{{ b.category }}</span>
+              </div>
+            </div>
+
+            <div style="background:rgba(255,255,255,.04); border-radius:var(--radius-sm); padding:.75rem; font-size:.78rem;">
+              <div class="d-flex justify-content-between mb-1">
+                <span style="color:var(--text-secondary)"><i class="fas fa-calendar-plus me-1"></i> Issued</span>
+                <span style="font-weight:600">{{ b.issue_date[:10] }}</span>
+              </div>
+              <div class="d-flex justify-content-between">
+                <span style="color:var(--text-secondary)"><i class="fas fa-calendar-times me-1"></i> Due Date</span>
+                <span style="font-weight:600; {% if is_overdue %}color:#f87171{% else %}color:#86efac{% endif %}">
+                  {{ b.due_date[:10] if b.due_date else '—' }}
+                </span>
+              </div>
+            </div>
+
+            {% if is_overdue %}
+            <div class="overdue-banner mt-2" style="padding:.5rem .75rem; font-size:.75rem;">
+              <i class="fas fa-exclamation-triangle"></i>
+              Book is overdue! Please return immediately.
+            </div>
+            {% else %}
+            <div class="mt-2" style="font-size:.75rem; color:var(--text-secondary); text-align:center">
+              <i class="fas fa-info-circle me-1"></i>
+              Return to librarian desk when done
+            </div>
+            {% endif %}
+          </div>
+          <div class="book-card-footer">
+            <span class="badge {% if is_overdue %}status-overdue{% else %}status-issued{% endif %} w-100 text-center py-2" style="font-size:.78rem">
+              <i class="fas fa-{% if is_overdue %}exclamation-circle{% else %}check-circle{% endif %} me-1"></i>
+              {% if is_overdue %}OVERDUE{% else %}Currently Issued{% endif %}
+            </span>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="card"><div class="card-body">
+      <div class="empty-state" style="padding:3.5rem">
+        <i class="fas fa-book-open" style="font-size:2.5rem; color:var(--text-muted); margin-bottom:1rem"></i>
+        <p style="font-size:.95rem; font-weight:600; margin-bottom:.5rem">No books currently issued</p>
+        <p><a href="{{ url_for('student_search') }}" class="btn btn-primary btn-sm mt-2">
+          <i class="fas fa-search me-2"></i>Browse Library
+        </a></p>
+      </div>
+    </div></div>
+    {% endif %}
+  </div>
+
+  <!-- REQUESTS -->
+  <div class="tab-pane fade" id="tab-requests">
+    {% if requests %}
+    <div class="card">
+      <div class="table-wrapper">
+        <table class="table">
+          <thead>
+            <tr><th>#</th><th>Book</th><th>Author</th><th>Requested On</th><th>Status</th></tr>
+          </thead>
+          <tbody>
+            {% for r in requests %}
+            <tr>
+              <td style="color:var(--text-muted)">{{ loop.index }}</td>
+              <td class="book-title-cell">{{ r.title }}</td>
+              <td class="book-author-cell">{{ r.author }}</td>
+              <td style="color:var(--text-secondary); font-size:.78rem">{{ r.request_date[:10] }}</td>
+              <td>
+                <span class="badge status-{{ r.status }}">
+                  <i class="fas fa-{% if r.status=='pending' %}clock{% elif r.status=='approved' %}check{% else %}times{% endif %} me-1"></i>
+                  {{ r.status|capitalize }}
+                </span>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    {% else %}
+    <div class="card"><div class="card-body">
+      <div class="empty-state" style="padding:3.5rem">
+        <i class="fas fa-inbox" style="font-size:2.5rem; color:var(--text-muted); margin-bottom:1rem"></i>
+        <p style="font-size:.95rem; font-weight:600; margin-bottom:.5rem">No book requests yet</p>
+        <p><a href="{{ url_for('student_search') }}" class="btn btn-primary btn-sm mt-2">
+          <i class="fas fa-search me-2"></i>Request a Book
+        </a></p>
+      </div>
+    </div></div>
+    {% endif %}
+  </div>
+
+  <!-- HISTORY -->
+  <div class="tab-pane fade" id="tab-history">
+    {% set returned = issued | selectattr('status', 'equalto', 'returned') | list %}
+    {% if returned %}
+    <div class="card">
+      <div class="table-wrapper">
+        <table class="table">
+          <thead>
+            <tr><th>#</th><th>Book</th><th>Category</th><th>Issued</th><th>Returned</th><th>Status</th></tr>
+          </thead>
+          <tbody>
+            {% for b in returned %}
+            <tr>
+              <td style="color:var(--text-muted)">{{ loop.index }}</td>
+              <td>
+                <div class="book-title-cell">{{ b.title }}</div>
+                <div class="book-author-cell">{{ b.author }}</div>
+              </td>
+              <td><span class="category-pill">{{ b.category }}</span></td>
+              <td style="color:var(--text-secondary); font-size:.78rem">{{ b.issue_date[:10] }}</td>
+              <td style="color:var(--text-secondary); font-size:.78rem">{{ b.return_date[:10] if b.return_date else '—' }}</td>
+              <td><span class="badge status-returned"><i class="fas fa-check me-1"></i>Returned</span></td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    {% else %}
+    <div class="card"><div class="card-body">
+      <div class="empty-state" style="padding:3.5rem">
+        <i class="fas fa-history" style="font-size:2.5rem; color:var(--text-muted); margin-bottom:1rem"></i>
+        <p style="font-size:.95rem; font-weight:600">No borrowing history yet</p>
+      </div>
+    </div></div>
+    {% endif %}
+  </div>
+
+</div><!-- tab-content -->
+{% endblock %}
+
+{% block scripts %}
+<style>
+  .nav-tabs .nav-link.active {
+    color: var(--accent) !important;
+    border-bottom: 2px solid var(--accent) !important;
+    font-weight: 600;
+  }
+  .nav-tabs .nav-link:hover { color: var(--text-primary) !important; }
+</style>
+{% endblock %}

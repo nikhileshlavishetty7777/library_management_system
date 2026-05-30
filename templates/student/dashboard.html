@@ -1,0 +1,155 @@
+{% extends "base.html" %}
+{% block title %}Student Dashboard{% endblock %}
+{% block topbar_title %}<span>My Dashboard</span><small>Welcome, {{ session.name }}!</small>{% endblock %}
+
+{% block content %}
+<!-- Stat Cards -->
+<div class="row g-3 mb-4">
+  <div class="col-6 col-md-3">
+    <div class="stat-card" style="--card-color:#f59e0b">
+      <div class="stat-icon-wrap"><i class="fas fa-bookmark"></i></div>
+      <div class="stat-body">
+        <div class="stat-value" data-count="{{ stats.issued }}">0</div>
+        <div class="stat-label">Books Issued</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="stat-card" style="--card-color:#22c55e">
+      <div class="stat-icon-wrap"><i class="fas fa-check-circle"></i></div>
+      <div class="stat-body">
+        <div class="stat-value" data-count="{{ stats.returned }}">0</div>
+        <div class="stat-label">Returned</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="stat-card" style="--card-color:#3b82f6">
+      <div class="stat-icon-wrap"><i class="fas fa-hourglass-half"></i></div>
+      <div class="stat-body">
+        <div class="stat-value" data-count="{{ stats.pending }}">0</div>
+        <div class="stat-label">Pending Requests</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="stat-card" style="--card-color:#ef4444">
+      <div class="stat-icon-wrap"><i class="fas fa-exclamation-circle"></i></div>
+      <div class="stat-body">
+        <div class="stat-value" data-count="{{ stats.overdue }}">0</div>
+        <div class="stat-label">Overdue</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% if stats.overdue > 0 %}
+<div class="overdue-banner mb-3">
+  <i class="fas fa-exclamation-triangle"></i>
+  You have <strong>{{ stats.overdue }} overdue book(s)</strong>. Please return them as soon as possible.
+  <a href="{{ url_for('student_my_books') }}" class="ms-2" style="color:#fca5a5; text-decoration:underline">View →</a>
+</div>
+{% endif %}
+
+<div class="row g-3">
+  <!-- Currently Issued Books -->
+  <div class="col-xl-7">
+    <div class="card">
+      <div class="card-header">
+        <h5><i class="fas fa-book-open"></i> Currently Issued</h5>
+        <a href="{{ url_for('student_my_books') }}" class="btn btn-secondary btn-sm">
+          View All <i class="fas fa-arrow-right ms-1"></i>
+        </a>
+      </div>
+      {% if my_books %}
+      <div class="table-wrapper">
+        <table class="table">
+          <thead><tr><th>Book</th><th>Category</th><th>Issue Date</th><th>Due Date</th></tr></thead>
+          <tbody>
+            {% for b in my_books %}
+            {% set is_overdue = b.due_date and b.due_date < now.isoformat() %}
+            <tr {% if is_overdue %}class="overdue-row"{% endif %}>
+              <td>
+                <div class="book-title-cell">{{ b.title[:35] }}{% if b.title|length>35 %}…{% endif %}</div>
+                <div class="book-author-cell">{{ b.author }}</div>
+              </td>
+              <td><span class="category-pill">{{ b.category }}</span></td>
+              <td style="font-size:.78rem; color:var(--text-secondary)">{{ b.issue_date[:10] }}</td>
+              <td>
+                <span data-due="{{ b.due_date }}" {% if is_overdue %}style="font-weight:600"{% endif %}>
+                  {{ b.due_date[:10] if b.due_date else '—' }}
+                </span>
+                {% if is_overdue %}
+                  <span class="badge status-overdue ms-1">Overdue</span>
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="card-body">
+        <div class="empty-state">
+          <i class="fas fa-book"></i>
+          <p>No books currently issued. <a href="{{ url_for('student_search') }}">Browse the library →</a></p>
+        </div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Newly Added Books -->
+  <div class="col-xl-5">
+    <div class="card">
+      <div class="card-header">
+        <h5><i class="fas fa-sparkles"></i> Recently Added</h5>
+        <a href="{{ url_for('student_search') }}" class="btn btn-secondary btn-sm">
+          Browse All <i class="fas fa-arrow-right ms-1"></i>
+        </a>
+      </div>
+      <div class="card-body" style="padding:.75rem">
+        {% for b in recent_books %}
+        <a href="{{ url_for('student_search', q=b.title) }}" class="text-decoration-none">
+          <div style="display:flex; align-items:center; gap:.75rem; padding:.6rem .5rem;
+               border-radius:var(--radius-sm); transition:background .2s; margin-bottom:2px;"
+               onmouseover="this.style.background='rgba(255,255,255,.05)'"
+               onmouseout="this.style.background=''">
+            <div class="book-cover" style="width:36px;height:48px;font-size:1rem">📚</div>
+            <div style="flex:1; min-width:0;">
+              <div style="font-size:.82rem; font-weight:600; color:var(--text-primary); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+                {{ b.title }}
+              </div>
+              <div style="font-size:.72rem; color:var(--text-secondary)">{{ b.author }}</div>
+            </div>
+            <span class="availability-pill {% if b.available > 0 %}available{% else %}unavailable{% endif %}">
+              <span class="availability-dot"></span>
+              {{ 'In' if b.available > 0 else 'Out' }}
+            </span>
+          </div>
+        </a>
+        {% else %}
+        <div class="empty-state"><i class="fas fa-books"></i><p>No books yet</p></div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="row g-3 mt-1">
+  <div class="col-12">
+    <div class="card">
+      <div class="card-header"><h5><i class="fas fa-bolt"></i> Quick Actions</h5></div>
+      <div class="card-body d-flex gap-2 flex-wrap">
+        <a href="{{ url_for('student_search') }}" class="btn btn-primary">
+          <i class="fas fa-search me-2"></i>Search Books
+        </a>
+        <a href="{{ url_for('student_my_books') }}" class="btn btn-secondary">
+          <i class="fas fa-bookmark me-2"></i>My Books & Requests
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

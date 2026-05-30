@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+{% block title %}Manage Users{% endblock %}
+{% block topbar_title %}<span>Users</span><small>Manage all library members</small>{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="page-header-left">
+    <h1 class="page-title"><i class="fas fa-users me-2" style="color:var(--accent)"></i>User Management</h1>
+    <p class="page-subtitle">{{ users|length }} user(s)</p>
+  </div>
+  <a href="{{ url_for('admin_add_user') }}" class="btn btn-primary">
+    <i class="fas fa-user-plus me-2"></i>Add User
+  </a>
+</div>
+
+<!-- Filters -->
+<div class="card mb-3">
+  <div class="card-body py-3">
+    <form method="GET" class="row g-2 align-items-center">
+      <div class="col-md-5 search-bar">
+        <i class="fas fa-search search-icon"></i>
+        <input type="text" name="q" class="form-control" placeholder="Search name or email…" value="{{ search }}"/>
+      </div>
+      <div class="col-md-3">
+        <select name="role" class="form-select">
+          <option value="">All Roles</option>
+          <option value="admin"     {% if selected_role=='admin' %}selected{% endif %}>Admin</option>
+          <option value="librarian" {% if selected_role=='librarian' %}selected{% endif %}>Librarian</option>
+          <option value="student"   {% if selected_role=='student' %}selected{% endif %}>Student</option>
+        </select>
+      </div>
+      <div class="col-md-2">
+        <button type="submit" class="btn btn-primary w-100"><i class="fas fa-filter me-1"></i>Filter</button>
+      </div>
+      {% if search or selected_role %}
+      <div class="col-md-2">
+        <a href="{{ url_for('admin_users') }}" class="btn btn-secondary w-100"><i class="fas fa-times me-1"></i>Clear</a>
+      </div>
+      {% endif %}
+    </form>
+  </div>
+</div>
+
+<!-- Table -->
+<div class="card">
+  <div class="table-wrapper">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Name</th>
+          <th>Email</th>
+          <th>Phone</th>
+          <th>Role</th>
+          <th>Joined</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for u in users %}
+        <tr>
+          <td style="color:var(--text-muted)">{{ loop.index }}</td>
+          <td>
+            <div class="d-flex align-items-center gap-2">
+              <div class="avatar avatar-{{ u.role }}" style="width:32px;height:32px;font-size:.75rem">
+                {{ u.name[0]|upper }}
+              </div>
+              <span class="fw-600">{{ u.name }}</span>
+            </div>
+          </td>
+          <td style="color:var(--text-secondary)">{{ u.email }}</td>
+          <td style="color:var(--text-secondary)">{{ u.phone or '—' }}</td>
+          <td>
+            <span class="badge role-{{ u.role }}">
+              <i class="fas fa-{% if u.role=='admin' %}crown{% elif u.role=='librarian' %}user-tie{% else %}user-graduate{% endif %} me-1"></i>
+              {{ u.role|capitalize }}
+            </span>
+          </td>
+          <td style="font-size:.78rem; color:var(--text-secondary)">{{ u.created_at[:10] if u.created_at else '—' }}</td>
+          <td>
+            <div class="action-btns">
+              <a href="{{ url_for('admin_edit_user', user_id=u.id) }}"
+                 class="btn btn-warning btn-sm" title="Edit">
+                <i class="fas fa-edit"></i>
+              </a>
+              {% if u.id != session.user_id %}
+              <form method="POST" action="{{ url_for('admin_delete_user', user_id=u.id) }}" style="display:inline">
+                <button type="submit" class="btn btn-danger btn-sm"
+                        data-confirm="Delete user '{{ u.name }}'?">
+                  <i class="fas fa-trash"></i>
+                </button>
+              </form>
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="7">
+            <div class="empty-state">
+              <i class="fas fa-users"></i>
+              <p>No users found</p>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

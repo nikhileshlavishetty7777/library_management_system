@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+{% block title %}Return Book{% endblock %}
+{% block topbar_title %}<span>Return Book</span><small>Process book returns</small>{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="page-header-left">
+    <h1 class="page-title"><i class="fas fa-undo-alt me-2" style="color:var(--accent)"></i>Return Books</h1>
+    <p class="page-subtitle">{{ active|length }} book(s) currently issued</p>
+  </div>
+  <a href="{{ url_for('librarian_issue') }}" class="btn btn-primary">
+    <i class="fas fa-plus me-2"></i>Issue Book
+  </a>
+</div>
+
+<!-- Filter bar -->
+<div class="card mb-3">
+  <div class="card-body py-3">
+    <div class="search-bar">
+      <i class="fas fa-search search-icon"></i>
+      <input type="text" id="tableFilter" class="form-control" placeholder="Filter by student or book…" style="max-width:360px"/>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="table-wrapper">
+    <table class="table filterable-table">
+      <thead>
+        <tr>
+          <th>Book</th>
+          <th>Student</th>
+          <th>Email</th>
+          <th>Issued</th>
+          <th>Due Date</th>
+          <th>Status</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in active %}
+        {% set is_overdue = r.due_date and r.due_date < now.isoformat() %}
+        <tr {% if is_overdue %}class="overdue-row"{% endif %}>
+          <td>
+            <div class="book-title-cell">{{ r.title }}</div>
+            <div class="book-author-cell">{{ r.author }}</div>
+          </td>
+          <td class="fw-600">{{ r.student_name }}</td>
+          <td style="color:var(--text-secondary); font-size:.78rem">{{ r.student_email }}</td>
+          <td style="font-size:.78rem; color:var(--text-secondary)">{{ r.issue_date[:10] }}</td>
+          <td>
+            <span data-due="{{ r.due_date }}" {% if is_overdue %}class="text-danger fw-600"{% endif %}>
+              {{ r.due_date[:10] if r.due_date else '—' }}
+            </span>
+            {% if is_overdue %}
+            <br><small style="font-size:.7rem; color:#f87171">
+              <i class="fas fa-exclamation-triangle me-1"></i>Overdue
+            </small>
+            {% endif %}
+          </td>
+          <td>
+            {% if is_overdue %}
+              <span class="badge status-overdue">Overdue</span>
+            {% else %}
+              <span class="badge status-issued">Issued</span>
+            {% endif %}
+          </td>
+          <td>
+            <form method="POST" action="{{ url_for('librarian_return') }}" style="display:inline">
+              <input type="hidden" name="issue_id" value="{{ r.id }}"/>
+              <button type="submit" class="btn btn-success btn-sm"
+                      data-confirm="Mark '{{ r.title }}' as returned from {{ r.student_name }}?">
+                <i class="fas fa-check me-1"></i>Return
+              </button>
+            </form>
+          </td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="7">
+            <div class="empty-state">
+              <i class="fas fa-books"></i>
+              <p>No books currently issued. <a href="{{ url_for('librarian_issue') }}">Issue a book →</a></p>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
